@@ -21,15 +21,12 @@
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
             display: flex;
             flex-direction: column;
-            align-items: center;
-            width: 90%; /* Set width to 90% for smaller screens */
-            max-width: 600px; /* Maximum width */
+            width: 90%;
+            max-width: 600px;
         }
         form {
             display: flex;
             flex-direction: column;
-            flex: 1;
-            width: 100%; /* Ensure form takes full width */
         }
         label {
             margin-top: 10px;
@@ -39,8 +36,6 @@
             margin-top: 5px;
             border: 1px solid #ccc;
             border-radius: 5px;
-            width: 100%; /* Ensure inputs take full width */
-            box-sizing: border-box; /* Include padding and border in width */
         }
         button {
             margin-top: 20px;
@@ -56,28 +51,22 @@
         }
         #qrcode {
             margin-top: 20px;
-            display: none; /* Initially hidden */
+            display: flex;
             justify-content: center;
             align-items: center;
         }
-        #downloadLink {
-            margin-top: 10px;
-            display: none; /* Initially hidden */
-        }
-
-        /* Media Queries for Responsiveness */
-        @media (max-width: 480px) {
-            body {
-                padding: 10px; /* Add some padding to the body */
-            }
+        @media (min-width: 768px) {
             .container {
-                padding: 10px; /* Reduce padding in the container */
+                flex-direction: row;
+                align-items: flex-start;
             }
-            button {
-                padding: 8px; /* Adjust button padding */
+            form {
+                flex: 1;
             }
-            input {
-                padding: 8px; /* Adjust input padding */
+            #qrcode {
+                margin-left: 20px;
+                flex: 1;
+                justify-content: center;
             }
         }
     </style>
@@ -93,7 +82,7 @@
             <input type="email" id="email" name="email" required>
             
             <label for="mobile">Mobile Number:</label>
-            <input type="text" id="mobile" name="mobile" required>
+            <input type="tel" id="mobile" name="mobile" required>
             
             <label for="address">Address 1:</label>
             <input type="text" id="address" name="address" required>
@@ -105,12 +94,12 @@
             <input type="text" id="address3" name="address3">
             
             <label for="dob">Date of Birth:</label>
-            <input type="date" id="dob" name="dob" required>
+            <input type="date" id="dob" name="dob">
 
             <button type="button" onclick="generateQRCode()">Generate QR Code</button>
         </form>
         <div id="qrcode"></div>
-        <a id="downloadLink" download="qrcode.png">Download QR Code</a>
+        <a id="downloadLink" style="display: none;" download="qrcode.png">Download QR Code</a>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -120,9 +109,9 @@
             const email = document.getElementById('email').value;
             const mobile = document.getElementById('mobile').value;
             const address = document.getElementById('address').value;
-            const address2 = document.getElementById('address2').value;
-            const address3 = document.getElementById('address3').value;
-            const dob = document.getElementById('dob').value;
+            const address2 = document.getElementById('address2').value || '';
+            const address3 = document.getElementById('address3').value || '';
+            const dob = document.getElementById('dob').value || '';
 
             const params = new URLSearchParams({ name, email, mobile, address, address2, address3, dob });
             const url = `${window.location.origin}${window.location.pathname}?${params.toString()}`;
@@ -130,49 +119,62 @@
             // Clear previous QR code
             document.getElementById('qrcode').innerHTML = '';
 
-            // Create new QR code
-            const qrcode = new QRCode(document.getElementById('qrcode'), {
-                text: url,
-                width: 150, // Set QR code size (width in pixels)
-                height: 150, // Set QR code size (height in pixels)
-                correctLevel: QRCode.CorrectLevel.H,
-            });
+            // Generate new QR code
+            const qrCodeElement = document.createElement('div');
+            new QRCode(qrCodeElement, url);
+            document.getElementById('qrcode').appendChild(qrCodeElement);
 
-            document.getElementById('qrcode').style.display = 'flex'; // Show the QR code
-            document.getElementById('detailsForm').style.display = 'none'; // Hide the form
+            // Show download link
+            const downloadLink = document.getElementById('downloadLink');
+            downloadLink.style.display = 'block';
 
-            // Create a downloadable link for the QR code
+            // Save QR code as image
             setTimeout(() => {
-                const canvas = document.querySelector('#qrcode canvas');
-                const link = document.getElementById('downloadLink');
-                if (canvas) {
-                    link.href = canvas.toDataURL("image/png"); // Convert the canvas to a data URL
-                    link.style.display = 'block'; // Show the download link
+                const qrCodeCanvas = document.querySelector('#qrcode canvas');
+                if (qrCodeCanvas) {
+                    downloadLink.href = qrCodeCanvas.toDataURL('image/png');
                 }
             }, 100);
         }
 
         function displayData() {
             const params = new URLSearchParams(window.location.search);
-            if (params.has('name') && params.has('email') && params.has('mobile') && params.has('address')) {
-                const name = params.get('name');
-                const email = params.get('email');
-                const mobile = params.get('mobile');
-                const address = params.get('address');
-                const address2 = params.get('address2') || '';
-                const address3 = params.get('address3') || '';
-                const dob = params.get('dob') || '';
+            const userDetails = [];
 
+            if (params.has('name') && params.get('name').trim() !== '') {
+                userDetails.push(`<p><strong>Name:</strong> ${params.get('name')}</p>`);
+            }
+            if (params.has('email') && params.get('email').trim() !== '') {
+                userDetails.push(`<p><strong>Email:</strong> ${params.get('email')}</p>`);
+            }
+            if (params.has('mobile') && params.get('mobile').trim() !== '') {
+                userDetails.push(`<p><strong>Mobile Number:</strong> ${params.get('mobile')}</p>`);
+            }
+            if (params.has('address') && params.get('address').trim() !== '') {
+                userDetails.push(`<p><strong>Address 1:</strong> ${params.get('address')}</p>`);
+            }
+            if (params.has('address2') && params.get('address2').trim() !== '') {
+                userDetails.push(`<p><strong>Address 2:</strong> ${params.get('address2')}</p>`);
+            }
+            if (params.has('address3') && params.get('address3').trim() !== '') {
+                userDetails.push(`<p><strong>Address 3:</strong> ${params.get('address3')}</p>`);
+            }
+            if (params.has('dob') && params.get('dob').trim() !== '') {
+                userDetails.push(`<p><strong>Date of Birth:</strong> ${params.get('dob')}</p>`);
+            }
+
+            if (userDetails.length > 0) {
                 document.body.innerHTML = `
                     <div class="container">
                         <h1>User Details</h1>
-                        <p><strong>Name:</strong> ${name}</p>
-                        <p><strong>Email:</strong> ${email}</p>
-                        <p><strong>Mobile Number:</strong> ${mobile}</p>
-                        <p><strong>Address 1:</strong> ${address}</p>
-                        <p><strong>Address 2:</strong> ${address2}</p>
-                        <p><strong>Address 3:</strong> ${address3}</p>
-                        <p><strong>Date of Birth:</strong> ${dob}</p>
+                        ${userDetails.join('')}
+                    </div>
+                `;
+            } else {
+                document.body.innerHTML = `
+                    <div class="container">
+                        <h1>Error</h1>
+                        <p>No user details found in the QR code.</p>
                     </div>
                 `;
             }
